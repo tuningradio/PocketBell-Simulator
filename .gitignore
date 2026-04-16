@@ -1,0 +1,9 @@
+edge_profile/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+bridge*_stdout.log
+bridge*_stderr.log
+pocketbell_gui_v30.zip
+pocketbell_gui_v31.zip

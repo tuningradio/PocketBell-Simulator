@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <!-- ================================= -->
+  <!-- PocketBell Simulator Ver 1.0 by JA1XPM 2026/04/16 -->
+  <!-- ================================= -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pocket Bell Clock</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <div class="device" aria-label="Pocket Bell">
+      <img id="pagerImg" src="assets/pager.png" alt="Pocket Bell" />
+      <canvas id="lcd" aria-label="LCD"></canvas>
+      <button id="setHotspot" aria-label="SET"></button>
+      <button id="upHotspot" aria-label="UP"></button>
+      <button id="downHotspot" aria-label="DOWN"></button>
+      <div class="lcd-glow" aria-hidden="true"></div>
+    </div>
+
+    <div class="controls">
+      <div id="inputError" class="inputError"></div>
+      <label>メッセージ:
+        <input id="msg" type="text" value="" />
+      </label>
+      <button id="toggle">バックライト</button>
+    </div>
+  </main>
+
+  <div id="myCallEditor" class="editor hidden">
+    <div class="editorBox">
+      <input id="myCallInput" type="text" spellcheck="false" autocomplete="off" />
+      <button id="myCallSave">SAVE</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
