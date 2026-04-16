@@ -40,6 +40,7 @@ window.ur_call = "";
   let routeDisplay = "";
   let lastValidInput = "";
   let lastRxAt = 0;
+  let lockedInputError = "";
   let ws = null;
 
   const CALL_MAP = {
@@ -143,7 +144,7 @@ window.ur_call = "";
             routeDisplay = `${data.from || ""} > ${window.my_call || data.to || ""}`;
             window.ur_call = data.from || "";
             lastRxAt = Date.now();
-            addHistoryLine(`→${data.from || ""} ${data.body || ""}`);
+            addHistoryMessage(`→${data.from || ""} `, data.body || "");
           }
         }catch{}
       };
@@ -151,6 +152,7 @@ window.ur_call = "";
   }
 
   function showError(message){
+    if(lockedInputError) return;
     inputError.textContent = message;
     clearTimeout(showError._timer);
     showError._timer = setTimeout(() => {
@@ -158,15 +160,53 @@ window.ur_call = "";
     }, 1000);
   }
 
-  function addHistoryLine(line){
-    const text = String(line || "").slice(0, COLS);
-    historyLines.push(text);
-    if(historyLines.length > MAX_HISTORY){
+  function setLockedError(message){
+    lockedInputError = message || "";
+    clearTimeout(showError._timer);
+    inputError.textContent = lockedInputError;
+  }
+
+  function clearLockedError(){
+    lockedInputError = "";
+    clearTimeout(showError._timer);
+    inputError.textContent = "";
+  }
+
+  function validateBodyLength(){
+    const body = splitAddressAndBody(msgInput.value || "").body;
+    if(displayLengthForInput(body) > MAX_BODY_CHARS){
+      setLockedError("24文字以上は送れません");
+      return false;
+    }
+    if(lockedInputError){
+      clearLockedError();
+    }
+    return true;
+  }
+
+  function addHistoryRows(rows){
+    for(const row of rows){
+      historyLines.push(String(row || "").slice(0, COLS));
+    }
+    while(historyLines.length > MAX_HISTORY){
       historyLines.shift();
     }
     scrollIndex = Math.max(0, historyLines.length - 2);
     saveState();
     render();
+  }
+
+  function addHistoryMessage(prefix, body){
+    const head = String(prefix || "");
+    const text = String(body || "");
+    const headCols = Math.max(0, COLS - head.length);
+    const firstBody = text.slice(0, headCols);
+    const rows = [`${head}${firstBody}`.slice(0, COLS)];
+    const remain = text.slice(firstBody.length);
+    if(remain){
+      rows.push(remain.slice(0, COLS));
+    }
+    addHistoryRows(rows);
   }
 
   function scrollUp(){
@@ -434,20 +474,13 @@ window.ur_call = "";
   });
 
   msgInput.addEventListener("input", () => {
-    const body = splitAddressAndBody(msgInput.value || "").body;
-    if(displayLengthForInput(body) > MAX_BODY_CHARS){
-      msgInput.value = lastValidInput;
-      showError("入力文字数オーバー");
-      return;
-    }
+    validateBodyLength();
     lastValidInput = msgInput.value;
   });
 
   msgInput.addEventListener("keydown", (e) => {
     if(e.key === "Enter"){
-      const parsed = splitAddressAndBody(msgInput.value || "");
-      if(displayLengthForInput(parsed.body) > MAX_BODY_CHARS){
-        showError("入力文字数オーバー");
+      if(!validateBodyLength()){
         e.preventDefault();
         return;
       }
@@ -456,7 +489,7 @@ window.ur_call = "";
         const sent = sendTx(built.seq);
         if(sent){
           routeDisplay = `${built.dest} < ${window.my_call || ""}`;
-          addHistoryLine(`←${built.dest} ${built.displayText}`);
+          addHistoryMessage(`←${built.dest} `, built.displayText);
         }
       }catch(err){
         if(err && err.message === "missing_command"){
