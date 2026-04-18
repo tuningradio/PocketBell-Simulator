@@ -1,5 +1,5 @@
 REM =================================
-REM PocketBell Simulator Ver 1.0 by JA1XPM 2026/04/16
+REM PocketBell Simulator Ver 1.1 by JA1XPM 2026/04/16
 REM =================================
 @echo off
 setlocal

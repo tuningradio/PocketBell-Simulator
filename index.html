@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <!-- ================================= -->
-  <!-- PocketBell Simulator Ver 1.0 by JA1XPM 2026/04/16 -->
+  <!-- PocketBell Simulator Ver 1.1 by JA1XPM 2026/04/16 -->
   <!-- ================================= -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -32,6 +32,16 @@
   <div id="myCallEditor" class="editor hidden">
     <div class="editorBox">
       <input id="myCallInput" type="text" spellcheck="false" autocomplete="off" />
+      <label class="switchRow">
+        <span>着信音を鳴らす</span>
+        <span class="switchLabels"><span>OFF</span><span>ON</span></span>
+        <input id="ringEnabledInput" type="checkbox" />
+      </label>
+      <label class="switchRow">
+        <span>CQ着信時も鳴らす</span>
+        <span class="switchLabels"><span>OFF</span><span>ON</span></span>
+        <input id="ringOnCqInput" type="checkbox" />
+      </label>
       <button id="myCallSave">SAVE</button>
     </div>
   </div>

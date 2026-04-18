@@ -1,5 +1,5 @@
 // =================================
-// PocketBell Simulator Ver 1.0 by JA1XPM 2026/04/16
+// PocketBell Simulator Ver 1.1 by JA1XPM 2026/04/16
 // =================================
 
 window.my_call = "";
@@ -18,6 +18,8 @@ window.ur_call = "";
 
   const myCallEditor = document.getElementById("myCallEditor");
   const myCallInput = document.getElementById("myCallInput");
+  const ringEnabledInput = document.getElementById("ringEnabledInput");
+  const ringOnCqInput = document.getElementById("ringOnCqInput");
   const myCallSave = document.getElementById("myCallSave");
 
   let backlight = false;
@@ -41,7 +43,11 @@ window.ur_call = "";
   let lastValidInput = "";
   let lastRxAt = 0;
   let lockedInputError = "";
+  let ringEnabled = true;
+  let ringOnCqEnabled = true;
   let ws = null;
+  const notifyAudio = new Audio("beepersound001.wav");
+  notifyAudio.preload = "auto";
 
   const CALL_MAP = {
     "A":"111","B":"112","C":"113","D":"114","E":"115",
@@ -59,8 +65,8 @@ window.ur_call = "";
     "タ":"41","チ":"42","ツ":"43","テ":"44","ト":"45","P":"46","Q":"47","R":"48","S":"49","T":"40",
     "ナ":"51","ニ":"52","ヌ":"53","ネ":"54","ノ":"55","U":"56","V":"57","W":"58","X":"59","Y":"50",
     "ハ":"61","ヒ":"62","フ":"63","ヘ":"64","ホ":"65","Z":"66","?":"67","!":"68","ー":"69","/":"60",
-    "マ":"71","ミ":"72","ム":"73","メ":"74","モ":"75","*":"76","&":"77","(":"78",")":"79","=":"70",
-    "ヤ":"81","ユ":"82","ヨ":"83","ャ":"84","ュ":"85","ョ":"86","ッ":"87",
+    "マ":"71","ミ":"72","ム":"73","メ":"74","モ":"75","*":"76","&":"77",
+    "ヤ":"81","ユ":"82","ヨ":"83","ャ":"84","ュ":"85","ョ":"86","ッ":"87"," ":"88",
     "ラ":"91","リ":"92","ル":"93","レ":"94","ロ":"95",
     "0":"00","1":"96","2":"97","3":"98","4":"99","5":"90","6":"06","7":"07","8":"08","9":"09"
   };
@@ -70,14 +76,14 @@ window.ur_call = "";
     "02":"TELセヨ",
     "03":"スグカエレ",
     "04":"シュウゴウ",
-    "05":"デモチーフダサイ",
-    "06":"スグニイケマス",
-    "07":"チコクシマス",
-    "08":"ペンシル",
-    "09":"FAXスル",
-    "10":"*4*410",
-    "11":"サンキュウ",
-    "12":"サキニイキマス",
+    "05":"サキニイッテクダサイ",
+    "06":"スグニイッテクダサイ",
+    "07":"チュウシスル",
+    "08":"ヘンコウスル",
+    "09":"FAXセヨ",
+    "10":"シジヲマテ",
+    "11":"サキニイキマス",
+    "12":"サキニカエリマス",
     "13":"オクレマス",
     "14":"キャクアリ",
     "15":"トラブル",
@@ -85,17 +91,17 @@ window.ur_call = "";
     "17":"スグニイキマス",
     "18":"OK",
     "19":"NO",
-    "20":"ヨロシク",
+    "20":"リョウカイ",
     "21":"カイシャニTELシテクダサイ",
-    "22":"ルスバンデンワシテクダサイ",
-    "23":"ジッカニTELシテクダサイ",
-    "24":"イマデンワシマシタ",
+    "22":"ルスバンデンワ",
+    "23":"ジタクニTELシテクダサイ",
+    "24":"イツモノトオリ",
     "25":"キテクダサイ",
     "26":"ゴメンナサイ",
-    "27":"アリガトウ",
-    "28":"オツカレサマ",
-    "29":"マッテマス",
-    "30":"*4*430"
+    "27":"ヨテイ",
+    "28":"アリガトウ",
+    "29":"オツカレサマ",
+    "30":"？"
   };
 
   function saveState(){
@@ -105,6 +111,8 @@ window.ur_call = "";
       localStorage.setItem("scrollIndex", String(scrollIndex));
       localStorage.setItem("routeDisplay", routeDisplay || "");
       localStorage.setItem("lastRxAt", String(lastRxAt || 0));
+      localStorage.setItem("ringEnabled", ringEnabled ? "1" : "0");
+      localStorage.setItem("ringOnCqEnabled", ringOnCqEnabled ? "1" : "0");
     }catch{}
   }
 
@@ -121,6 +129,31 @@ window.ur_call = "";
       const savedRoute = localStorage.getItem("routeDisplay");
       if(savedRoute) routeDisplay = savedRoute;
       lastRxAt = Number(localStorage.getItem("lastRxAt") || "0") || 0;
+      const savedRingEnabled = localStorage.getItem("ringEnabled");
+      if(savedRingEnabled !== null) ringEnabled = savedRingEnabled === "1";
+      const savedRingOnCq = localStorage.getItem("ringOnCqEnabled");
+      if(savedRingOnCq !== null) ringOnCqEnabled = savedRingOnCq === "1";
+    }catch{}
+  }
+
+  function syncRingSettingsUi(){
+    if(ringEnabledInput) ringEnabledInput.checked = ringEnabled;
+    if(ringOnCqInput){
+      ringOnCqInput.checked = ringOnCqEnabled;
+      ringOnCqInput.disabled = !ringEnabled;
+      ringOnCqInput.closest(".switchRow")?.classList.toggle("disabled", !ringEnabled);
+    }
+  }
+
+  function maybePlayNotify(target){
+    const to = String(target || "").toUpperCase();
+    if(!ringEnabled) return;
+    if(to === "CQ" && !ringOnCqEnabled) return;
+    if(!notifyAudio.paused) return;
+    try{
+      notifyAudio.currentTime = 0;
+      const played = notifyAudio.play();
+      if(played && typeof played.catch === "function") played.catch(() => {});
     }catch{}
   }
 
@@ -145,6 +178,7 @@ window.ur_call = "";
             window.ur_call = data.from || "";
             lastRxAt = Date.now();
             addHistoryMessage(`→${data.from || ""} `, data.body || "");
+            maybePlayNotify(data.to || "");
           }
         }catch{}
       };
@@ -344,6 +378,7 @@ window.ur_call = "";
   function showMyCallEditor(){
     if(!myCallEditor) return;
     myCallInput.value = window.my_call || "";
+    syncRingSettingsUi();
     myCallEditor.classList.remove("hidden");
     myCallInput.focus();
   }
@@ -460,10 +495,27 @@ window.ur_call = "";
   if(myCallSave){
     myCallSave.addEventListener("click", () => {
       window.my_call = (myCallInput.value || "").trim().toUpperCase();
+      ringEnabled = !!ringEnabledInput?.checked;
+      ringOnCqEnabled = !!ringOnCqInput?.checked;
       saveState();
       updateMyCallRemote();
+      syncRingSettingsUi();
       hideMyCallEditor();
       render();
+    });
+  }
+
+  if(ringEnabledInput){
+    ringEnabledInput.addEventListener("change", () => {
+      ringEnabled = !!ringEnabledInput.checked;
+      syncRingSettingsUi();
+    });
+  }
+
+  if(ringOnCqInput){
+    ringOnCqInput.addEventListener("change", () => {
+      ringOnCqEnabled = !!ringOnCqInput.checked;
+      syncRingSettingsUi();
     });
   }
 
@@ -508,5 +560,6 @@ window.ur_call = "";
 
   window.addEventListener("resize", render);
   setInterval(render, 1000);
+  syncRingSettingsUi();
   render();
 })();
