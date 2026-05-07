@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # =================================
-# PocketBell Simulator Ver 1.1.1 by JA1XPM 2026/04/16
+# PocketBell Simulator Ver 1.1.1 by JA1XPM 2026/05/07
 # =================================
 
 # dtmftest_pager.py
